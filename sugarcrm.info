@@ -1,0 +1,5 @@
+name = SugarCRM
+description = SugarCRM calendar sync.
+core = 7.x
+version = 7.x
+configure = admin/config/sugarcrm/manage

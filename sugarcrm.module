@@ -1,0 +1,70 @@
+<?php
+/**
+* @file
+* A description of what your module does.
+*/
+require_once('class/SugarModel.inc');
+require_once('class/SugarTask.inc');
+require_once('class/SugarCall.inc');
+require_once('class/SugarMeeting.inc');
+require_once('class/SugarConnector.inc');
+require_once("./lib/nusoap.php");
+
+/**
+ * Implements menu_hook().
+ * @return array
+ */
+function sugarcrm_menu(){
+    $item = array();
+
+    //Admin configuration group
+    $item["admin/config/sugarcrm"] = array(
+        'title' => 'SugarCRM',
+        'description' => 'Administer SugarCRM settings',
+        'access arguments' => array("user access")
+    );
+
+    //Admin configuration settings
+    $item["admin/config/sugarcrm/manage"] = array(
+        'title' => 'SugarCRM settings',
+        'description' => 'Manage SugarCRM settings',
+        'access arguments' => array("user access"),
+        'page callback' => 'drupal_get_form',
+        'page arguments' => array("sugarcrm_admin_settings_form")
+    );
+
+    return $item;
+}
+
+/**
+ * Implements hook_form()
+ * @param $node
+ * @param $form_state
+ *
+ * @return array
+ */
+function sugarcrm_admin_settings_form($node, &$form_state){
+    $form = array();
+
+    $form['overview'] = array(
+        '#markup' => t("This interface allows you to manage general sugarcrm settings"),
+        '#prefix' => "<p>",
+        '#suffix' => "</p>"
+    );
+
+    $form['sugarcrm_username'] = array(
+        '#title' => t("Username"),
+        '#type' => 'textfield',
+        '#required' => true,
+        '#default_value' => variable_get("sugarcrm_username")
+    );
+
+    $form['sugarcrm_password'] = array(
+        '#title' => t("Password"),
+        '#type' => 'password',
+        '#required' => true,
+        '#default_value' => variable_get("sugarcrm_password")
+    );
+
+    return system_settings_form($form);
+}
