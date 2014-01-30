@@ -4,6 +4,8 @@ class SugarConnector {
     const MEETINGS = 'Meetings';
     const CALLS = 'Calls';
     const TASKS = 'Tasks';
+    const JCRMTIME = 'JCRMTime';
+    const CASES = 'Cases';
 
     private $url = "http://crm.bellcom.dk/soap.php?wsdl";
     private $username;
@@ -108,4 +110,26 @@ class SugarConnector {
         }
         return $list;
     }
+
+    /**
+     * @return array
+     */
+    public function get_jcrmtime(){
+        $get_entry_list_result = $this->get_entry_list(self::JCRMTIME);
+        $list = array();
+        foreach ($get_entry_list_result['entry_list'] as $entry) {
+            $list[] = new SugarJCRMTime($entry['name_value_list']);
+        }
+        return $list;
+    }
+
+    public function get_cases(){
+        $get_entry_list_result = $this->get_entry_list(self::CASES);
+        $list = array();
+        foreach ($get_entry_list_result['entry_list'] as $entry) {
+            $list[] = new SugarCase($entry['name_value_list']);
+        }
+        return $list;
+    }
+
 }

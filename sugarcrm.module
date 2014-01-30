@@ -4,11 +4,9 @@
 * A description of what your module does.
 */
 require_once('class/SugarModel.inc');
-require_once('class/SugarTask.inc');
-require_once('class/SugarCall.inc');
-require_once('class/SugarMeeting.inc');
+require_once('class/SugarJCRMTime.inc');
 require_once('class/SugarConnector.inc');
-require_once("./lib/nusoap.php");
+require_once("lib/nusoap.php");
 
 /**
  * Implements menu_hook().
@@ -67,4 +65,103 @@ function sugarcrm_admin_settings_form($node, &$form_state){
     );
 
     return system_settings_form($form);
+}
+
+/**
+ * Implements hook_cron().
+ */
+function sugarcrm_cron(){
+    try{
+        $username = variable_get('sugarcrm_username');
+        $password = variable_get('sugarcrm_password');
+        $client = new SugarConnector($username, $password);
+        $client->connect();
+        $time = $client->get_jcrmtime();
+
+        foreach ($time as $t) {
+            _sugarcrm_manage_entry($t);
+        }
+    }
+    catch (Exception $e){
+        drupal_set_message($e->getMessage(), 'error');
+    }
+}
+
+/**
+ * Manage entries.
+ * @param $entry
+ */
+function _sugarcrm_manage_entry($entry){
+    //check if exists
+    $query = new EntityFieldQuery();
+    $result = $query
+        ->entityCondition('entity_type', 'node')
+        ->fieldCondition('field_sugar_id', 'value', $entry->id, '=')
+        ->execute();
+
+    if($result){
+        //exist
+        //update
+        $param = array_keys($result['node']);
+        $node = node_load(array_shift($param));
+        if($node != false){
+            if(_sugarcrm_compare_node_data($node, $entry) == false){
+                $node = _sugarcrm_set_node_fields($node, $entry);
+                node_save($node);
+            }
+        }
+    }
+    else{
+        //does not exist
+        //create
+        $node = _sugarcrm_create_node($entry);
+        $node = node_submit($node);
+        node_save($node);
+    }
+}
+
+/**
+ * @param $node
+ * @param $entry SugarJCRMTime
+ */
+function _sugarcrm_compare_node_data($node, $entry){
+    if($node->field_sugar_case_id['und'][0]['value']            != $entry->case_id)         return false;
+    if($node->field_sugar_created_by_name['und'][0]['value']    != $entry->created_by_name) return false;
+    if($node->field_sugar_date['und'][0]['value']               != $entry->date)            return false;
+    if($node->field_sugar_time_length['und'][0]['value']        != $entry->time_length)     return false;
+    //drupal_set_message(mysql_real_escape_string($entry->description));
+    if($node->field_sugar_description['und'][0]['value']        != utf8_encode($entry->description))return false;
+    return true;
+}
+
+/**
+ * Creates node from given SugarJCRMTime.
+ * @param $entry SugarJCRMTime
+ * @return StdClass
+ */
+function _sugarcrm_create_node($entry){
+    $node = new StdClass();
+    $node->type = 'sugar_jcrmtime';
+    $node->promote = 0;
+    node_object_prepare($node);
+    $node->title = 'SugarJCRMTime ' . $entry->id;
+    $node->language = LANGUAGE_NONE;
+    $node = _sugarcrm_set_node_fields($node, $entry);
+    return $node;
+}
+
+/**
+ * Sets fields of given node
+ * @param $node
+ * @param $entry
+ * @return mixed
+ */
+function _sugarcrm_set_node_fields($node, $entry){
+$node->field_sugar_id['und'][0]['value']                     = $entry->id;
+    $node->field_sugar_case_id['und'][0]['value']            = $entry->case_id;
+    $node->field_sugar_created_by_name['und'][0]['value']    = $entry->created_by_name;
+    $node->field_sugar_date['und'][0]['value']               = $entry->date;
+    $node->field_sugar_time_length['und'][0]['value']        = $entry->time_length;
+    $node->field_sugar_description['und'][0]['value']        = utf8_encode($entry->description);
+    return $node;
 }
