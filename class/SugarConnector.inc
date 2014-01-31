@@ -6,6 +6,7 @@ class SugarConnector {
     const TASKS = 'Tasks';
     const JCRMTIME = 'JCRMTime';
     const CASES = 'Cases';
+    const MAX_ROWS = 300;
 
     private $url = "http://crm.bellcom.dk/soap.php?wsdl";
     private $username;
@@ -45,7 +46,7 @@ class SugarConnector {
         return $login_result;
     }
 
-    public function get_entry_list($module_name){
+    public function get_entry_list($module_name, $offset = 0){
         $get_entry_list_parameters = array(
             //session id
             'session' => $this->session_id,
@@ -56,7 +57,7 @@ class SugarConnector {
             //The SQL ORDER BY clause without the phrase “order by”.
             'order_by' => "",
             //The record offset from which to start.
-            'offset' => "0",
+            'offset' => $offset,
 //    //Optional. The list of fields to be returned in the results
 //    'select_fields' => array(
 //        'id',
@@ -76,7 +77,7 @@ class SugarConnector {
 //        ),
 //    ),
             //The maximum number of results to return.
-            //'max_results' => '2',
+            'max_results' => self::MAX_ROWS,
             //To exclude deleted records
             'deleted' => 0,
             //If only records marked as favorites should be returned.
@@ -114,8 +115,8 @@ class SugarConnector {
     /**
      * @return array
      */
-    public function get_jcrmtime(){
-        $get_entry_list_result = $this->get_entry_list(self::JCRMTIME);
+    public function get_jcrmtime($offset = 0){
+        $get_entry_list_result = $this->get_entry_list(self::JCRMTIME, $offset);
         $list = array();
         foreach ($get_entry_list_result['entry_list'] as $entry) {
             $list[] = new SugarJCRMTime($entry['name_value_list']);

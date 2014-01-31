@@ -74,13 +74,18 @@ function sugarcrm_cron(){
     try{
         $username = variable_get('sugarcrm_username');
         $password = variable_get('sugarcrm_password');
+        $offset = variable_get('sugarcrm_offset', 0);
         $client = new SugarConnector($username, $password);
         $client->connect();
-        $time = $client->get_jcrmtime();
-
+        $time = $client->get_jcrmtime($offset);
+        drupal_set_message($offset);
         foreach ($time as $t) {
             _sugarcrm_manage_entry($t);
         }
+
+        if(count($time) == 0) $offset = 0;
+        else $offset += SugarConnector::MAX_ROWS;
+        variable_set('sugarcrm_offset', $offset);
     }
     catch (Exception $e){
         drupal_set_message($e->getMessage(), 'error');
