@@ -78,7 +78,6 @@ function sugarcrm_cron(){
         $client = new SugarConnector($username, $password);
         $client->connect();
         $time = $client->get_jcrmtime($offset);
-        drupal_set_message($offset);
         foreach ($time as $t) {
             _sugarcrm_manage_entry($t);
         }
