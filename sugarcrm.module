@@ -126,10 +126,10 @@ function _sugarcrm_manage_entry($entry){
  */
 function _sugarcrm_compare_node_data($node, $entry){
     if($node->field_sugar_case_id['und'][0]['value']            != $entry->case_id)         return false;
+    if($node->field_sugar_case_name['und'][0]['value']          != utf8_encode($entry->case_name))return false;
     if($node->field_sugar_created_by_name['und'][0]['value']    != $entry->created_by_name) return false;
     if($node->field_sugar_date['und'][0]['value']               != $entry->date)            return false;
     if($node->field_sugar_time_length['und'][0]['value']        != $entry->time_length)     return false;
-    //drupal_set_message(mysql_real_escape_string($entry->description));
     if($node->field_sugar_description['und'][0]['value']        != utf8_encode($entry->description))return false;
     return true;
 }
@@ -159,6 +159,7 @@ function _sugarcrm_create_node($entry){
 function _sugarcrm_set_node_fields($node, $entry){
 $node->field_sugar_id['und'][0]['value']                     = $entry->id;
     $node->field_sugar_case_id['und'][0]['value']            = $entry->case_id;
+    $node->field_sugar_case_name['und'][0]['value']          = utf8_encode($entry->case_name);
     $node->field_sugar_created_by_name['und'][0]['value']    = $entry->created_by_name;
     $node->field_sugar_date['und'][0]['value']               = $entry->date;
     $node->field_sugar_time_length['und'][0]['value']        = $entry->time_length;
