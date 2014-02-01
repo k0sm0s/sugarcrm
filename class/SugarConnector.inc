@@ -46,7 +46,7 @@ class SugarConnector {
         return $login_result;
     }
 
-    public function get_entry_list($module_name, $offset = 0){
+    public function get_entry_list($module_name, $offset = 0, $rows = self::MAX_ROWS){
         $get_entry_list_parameters = array(
             //session id
             'session' => $this->session_id,
@@ -77,7 +77,7 @@ class SugarConnector {
 //        ),
 //    ),
             //The maximum number of results to return.
-            'max_results' => self::MAX_ROWS,
+            'max_results' => $rows,
             //To exclude deleted records
             'deleted' => 0,
             //If only records marked as favorites should be returned.
@@ -115,8 +115,8 @@ class SugarConnector {
     /**
      * @return array
      */
-    public function get_jcrmtime($offset = 0){
-        $get_entry_list_result = $this->get_entry_list(self::JCRMTIME, $offset);
+    public function get_jcrmtime($offset = 0, $rows = self::MAX_ROWS){
+        $get_entry_list_result = $this->get_entry_list(self::JCRMTIME, $offset, $rows);
         $list = array();
         foreach ($get_entry_list_result['entry_list'] as $entry) {
             $list[] = new SugarJCRMTime($entry['name_value_list']);

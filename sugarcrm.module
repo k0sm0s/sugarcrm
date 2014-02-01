@@ -64,6 +64,13 @@ function sugarcrm_admin_settings_form($node, &$form_state){
         '#default_value' => variable_get("sugarcrm_password")
     );
 
+    $form['sugarcrm_max_rows'] = array(
+        '#title' => t("Rows per run"),
+        '#type' => 'textfield',
+        '#required' => true,
+        '#default_value' => variable_get("sugarcrm_max_rows", SugarConnector::MAX_ROWS)
+    );
+
     return system_settings_form($form);
 }
 
@@ -75,6 +82,7 @@ function sugarcrm_cron(){
         $username = variable_get('sugarcrm_username');
         $password = variable_get('sugarcrm_password');
         $offset = variable_get('sugarcrm_offset', 0);
+        $max_rows = variable_get('sugarcrm_max_rows', SugarConnector::MAX_ROWS);
         $client = new SugarConnector($username, $password);
         $client->connect();
         $time = $client->get_jcrmtime($offset);
@@ -83,7 +91,7 @@ function sugarcrm_cron(){
         }
 
         if(count($time) == 0) $offset = 0;
-        else $offset += SugarConnector::MAX_ROWS;
+        else $offset += $max_rows;
         variable_set('sugarcrm_offset', $offset);
     }
     catch (Exception $e){
@@ -161,7 +169,7 @@ function _sugarcrm_create_node($entry){
  * @return mixed
  */
 function _sugarcrm_set_node_fields($node, $entry){
-$node->field_sugar_id['und'][0]['value']                     = $entry->id;
+    $node->field_sugar_id['und'][0]['value']                 = $entry->id;
     $node->field_sugar_case_id['und'][0]['value']            = $entry->case_id;
     $node->field_sugar_case_name['und'][0]['value']          = utf8_encode($entry->case_name);
     $node->field_sugar_created_by_name['und'][0]['value']    = $entry->created_by_name;
