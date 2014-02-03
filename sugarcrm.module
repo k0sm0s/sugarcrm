@@ -164,7 +164,7 @@ function _sugarcrm_create_node($entry){
 
 function _sugarcrm_convert_date($date){
     $time = strtotime($date);
-    return date("d/m/Y", $time);
+    return date("Y-m-d H:i:s", $time);
 }
 
 /**
