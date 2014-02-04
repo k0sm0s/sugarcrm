@@ -5,6 +5,7 @@
 */
 require_once('class/SugarModel.inc');
 require_once('class/SugarJCRMTime.inc');
+require_once('class/SugarCase.inc');
 require_once('class/SugarConnector.inc');
 require_once("lib/nusoap.php");
 
@@ -81,22 +82,63 @@ function sugarcrm_cron(){
     try{
         $username = variable_get('sugarcrm_username');
         $password = variable_get('sugarcrm_password');
-        $offset = variable_get('sugarcrm_offset', 0);
+        $timeoffset = variable_get('sugarcrm_offset_jcrmtime', 0);
+        $caseoffset = variable_get('sugarcrm_offset_case', 0);
         $max_rows = variable_get('sugarcrm_max_rows', SugarConnector::MAX_ROWS);
         $client = new SugarConnector($username, $password);
         $client->connect();
-        $time = $client->get_jcrmtime($offset);
+        $time = $client->get_jcrmtime($timeoffset, $max_rows);
         foreach ($time as $t) {
             _sugarcrm_manage_entry($t);
         }
 
-        if(count($time) == 0) $offset = 0;
-        else $offset += $max_rows;
-        variable_set('sugarcrm_offset', $offset);
+        $cases = $client->get_cases($caseoffset, $max_rows);
+        foreach ($cases as $case) {
+            _sugarcrm_manage_case($case);
+        }
+
+        if(count($cases) == 0) $caseoffset = 0;
+        else $caseoffset += $max_rows;
+
+        if(count($time) == 0) $timeoffset = 0;
+        else $timeoffset += $max_rows;
+
+        variable_set('sugarcrm_offset_jcrmtime', $timeoffset);
+        variable_set('sugarcrm_offset_case', $timeoffset);
     }
     catch (Exception $e){
         drupal_set_message($e->getMessage(), 'error');
     }
+}
+
+function _sugarcrm_manage_case($entry){
+    //check if exists
+    $query = new EntityFieldQuery();
+    $result = $query
+        ->entityCondition('entity_type', 'sugarcrm_case')
+        ->fieldCondition('field_sugar_id', 'value', $entry->id, '=')
+        ->execute();
+
+    if($result){
+        //exist
+        //update
+        $param = array_keys($result['node']);
+        $node = node_load(array_shift($param));
+        if($node != false){
+            if(_sugarcrm_compare_case_data($node, $entry) == false){
+                $node = _sugarcrm_set_case_fields($node, $entry);
+                node_save($node);
+            }
+        }
+    }
+    else{
+        //does not exist
+        //create
+        $node = _sugarcrm_create_case($entry);
+        $node = node_submit($node);
+        node_save($node);
+    }
+
 }
 
 /**
@@ -107,7 +149,7 @@ function _sugarcrm_manage_entry($entry){
     //check if exists
     $query = new EntityFieldQuery();
     $result = $query
-        ->entityCondition('entity_type', 'node')
+        ->entityCondition('entity_type', 'sugar_jcrmtime')
         ->fieldCondition('field_sugar_id', 'value', $entry->id, '=')
         ->execute();
 
@@ -146,6 +188,16 @@ function _sugarcrm_compare_node_data($node, $entry){
     return true;
 }
 
+
+function _sugarcrm_compare_case_data($node, $entry){
+    if($node->field_sugar_id['und'][0]['value']            != $entry->id)               return false;
+    if($node->field_sugar_name['und'][0]['value']          != utf8_encode($entry->name))return false;
+    if($node->field_sugar_max_hours_c['und'][0]['value']   != $entry->max_hours_c)      return false;
+    if($node->field_sugar_reg_hours_c['und'][0]['value']   != $entry->reg_hours_c)      return false;
+    if($node->field_sugar_rest_hours_c['und'][0]['value']  != $entry->rest_hours_c)     return false;
+    return true;
+}
+
 /**
  * Creates node from given SugarJCRMTime.
  * @param $entry SugarJCRMTime
@@ -159,6 +211,17 @@ function _sugarcrm_create_node($entry){
     $node->title = 'SugarJCRMTime ' . $entry->id;
     $node->language = LANGUAGE_NONE;
     $node = _sugarcrm_set_node_fields($node, $entry);
+    return $node;
+}
+
+function _sugarcrm_create_case($entry){
+    $node = new StdClass();
+    $node->type = 'sugarcrm_case';
+    $node->promote = 0;
+    node_object_prepare($node);
+    $node->title = 'SugarCRM Case: ' . utf8_encode($entry->name);
+    $node->language = LANGUAGE_NONE;
+    $node = _sugarcrm_set_case_fields($node, $entry);
     return $node;
 }
 
@@ -181,5 +244,14 @@ function _sugarcrm_set_node_fields($node, $entry){
     $node->field_sugar_date['und'][0]['value']               = _sugarcrm_convert_date($entry->date);
     $node->field_sugar_time_length['und'][0]['value']        = $entry->time_length;
     $node->field_sugar_description['und'][0]['value']        = utf8_encode($entry->description);
+    return $node;
+}
+
+function _sugarcrm_set_case_fields($node, $entry){
+    $node->field_sugar_id['und'][0]['value']            = $entry->id;
+    $node->field_sugar_name['und'][0]['value']          = utf8_encode($entry->name);
+    $node->field_sugar_max_hours_c['und'][0]['value']   = $entry->max_hours_c;
+    $node->field_sugar_reg_hours_c['und'][0]['value']   = $entry->reg_hours_c;
+    $node->field_sugar_rest_hours_c['und'][0]['value']  = $entry->rest_hours_c;
     return $node;
 }
