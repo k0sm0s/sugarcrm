@@ -14,6 +14,8 @@ class SugarCase extends SugarModel{
     private $accept_overrun_c;
     private $rest_hours_c;
     private $reg_hours_c;
+    private $name;
+    private $status;
 
     function __set($name, $value)
     {

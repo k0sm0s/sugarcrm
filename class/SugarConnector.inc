@@ -124,8 +124,8 @@ class SugarConnector {
         return $list;
     }
 
-    public function get_cases(){
-        $get_entry_list_result = $this->get_entry_list(self::CASES);
+    public function get_cases($offset = 0, $rows = self::MAX_ROWS){
+        $get_entry_list_result = $this->get_entry_list(self::CASES, $offset, $rows);
         $list = array();
         foreach ($get_entry_list_result['entry_list'] as $entry) {
             $list[] = new SugarCase($entry['name_value_list']);
