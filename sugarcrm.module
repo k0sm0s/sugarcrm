@@ -91,11 +91,11 @@ function sugarcrm_cron(){
         foreach ($time as $t) {
             _sugarcrm_manage_entry($t);
         }
-
         $cases = $client->get_cases($caseoffset, $max_rows);
         foreach ($cases as $case) {
             _sugarcrm_manage_case($case);
         }
+        _sugarcrm_manage_case_field($cases);
 
         if(count($cases) == 0) $caseoffset = 0;
         else $caseoffset += $max_rows;
@@ -104,11 +104,24 @@ function sugarcrm_cron(){
         else $timeoffset += $max_rows;
 
         variable_set('sugarcrm_offset_jcrmtime', $timeoffset);
-        variable_set('sugarcrm_offset_case', $timeoffset);
+        variable_set('sugarcrm_offset_case', $caseoffset);
     }
     catch (Exception $e){
         drupal_set_message($e->getMessage(), 'error');
     }
+}
+
+function _sugarcrm_manage_case_field($cases){
+// Get the field info
+    $info = field_info_field('field_allowed_cases');
+// Get a reference to the values
+    $values = &$info['settings']['allowed_values'];
+// Manipulate the values
+    foreach ($cases as $entry) {
+        $values[$entry->id] = utf8_encode($entry->name);
+    }
+// Save the field
+    field_update_field($info);
 }
 
 function _sugarcrm_manage_case($entry){
