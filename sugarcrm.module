@@ -87,15 +87,17 @@ function sugarcrm_cron(){
         $max_rows = variable_get('sugarcrm_max_rows', SugarConnector::MAX_ROWS);
         $client = new SugarConnector($username, $password);
         $client->connect();
-        $time = $client->get_jcrmtime($timeoffset, $max_rows);
-        foreach ($time as $t) {
-            _sugarcrm_manage_entry($t);
-        }
+
         $cases = $client->get_cases($caseoffset, $max_rows);
         foreach ($cases as $case) {
             _sugarcrm_manage_case($case);
         }
-        _sugarcrm_manage_case_field($cases);
+        $timeoffset = 0;
+        $time = $client->get_jcrmtime($timeoffset, $max_rows);
+        foreach ($time as $t) {
+            _sugarcrm_manage_entry($t);
+        }
+        //_sugarcrm_manage_case_field($cases);
 
         if(count($cases) == 0) $caseoffset = 0;
         else $caseoffset += $max_rows;
@@ -111,27 +113,27 @@ function sugarcrm_cron(){
     }
 }
 
-function _sugarcrm_manage_case_field($cases){
-// Get the field info
-    $info = field_info_field('field_allowed_cases');
-// Get a reference to the values
-    $values = &$info['settings']['allowed_values'];
-// Manipulate the values
-    foreach ($cases as $entry) {
-        $values[$entry->id] = utf8_encode($entry->name);
-    }
-// Save the field
-    field_update_field($info);
-}
+//function _sugarcrm_manage_case_field($cases){
+//// Get the field info
+//    $info = field_info_field('field_allowed_cases');
+//// Get a reference to the values
+//    $values = &$info['settings']['allowed_values'];
+//// Manipulate the values
+//    foreach ($cases as $entry) {
+//        $values[$entry->id] = utf8_encode($entry->name);
+//    }
+//// Save the field
+//    field_update_field($info);
+//}
 
 function _sugarcrm_manage_case($entry){
     //check if exists
     $query = new EntityFieldQuery();
     $result = $query
-        ->entityCondition('entity_type', 'sugarcrm_case')
+        ->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'sugarcrm_case')
         ->fieldCondition('field_sugar_id', 'value', $entry->id, '=')
         ->execute();
-
     if($result){
         //exist
         //update
@@ -162,7 +164,8 @@ function _sugarcrm_manage_entry($entry){
     //check if exists
     $query = new EntityFieldQuery();
     $result = $query
-        ->entityCondition('entity_type', 'sugar_jcrmtime')
+        ->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'sugar_jcrmtime')
         ->fieldCondition('field_sugar_id', 'value', $entry->id, '=')
         ->execute();
 
@@ -175,6 +178,7 @@ function _sugarcrm_manage_entry($entry){
             if(_sugarcrm_compare_node_data($node, $entry) == false){
                 $node = _sugarcrm_set_node_fields($node, $entry);
                 node_save($node);
+                _sugarcrm_bind_to_case($node);
             }
         }
     }
@@ -183,6 +187,23 @@ function _sugarcrm_manage_entry($entry){
         //create
         $node = _sugarcrm_create_node($entry);
         $node = node_submit($node);
+        node_save($node);
+        _sugarcrm_bind_to_case($node);
+        //debug($node->nid);
+    }
+}
+
+function _sugarcrm_bind_to_case($node){
+    $query = new EntityFieldQuery();
+    $result = $query
+        ->entityCondition('entity_type', 'node')
+        ->entityCondition('bundle', 'sugarcrm_case')
+        ->fieldCondition('field_sugar_id', 'value', $node->field_sugar_case_id['und'][0]['value'], '=')
+        ->execute();
+    if($result){
+        //exist
+        $param = array_keys($result['node']);
+        $node->field_sugar_case['und'][0]['target_id'] = array_shift($param);
         node_save($node);
     }
 }
@@ -195,7 +216,8 @@ function _sugarcrm_compare_node_data($node, $entry){
     if($node->field_sugar_case_id['und'][0]['value']            != $entry->case_id)         return false;
     if($node->field_sugar_case_name['und'][0]['value']          != utf8_encode($entry->case_name))return false;
     if($node->field_sugar_created_by_name['und'][0]['value']    != $entry->created_by_name) return false;
-    if($node->field_sugar_date['und'][0]['value']               != _sugarcrm_convert_date($entry->date))return false;
+    if(isset($node->field_sugar_date['und']))
+        if($node->field_sugar_date['und'][0]['value']               != _sugarcrm_convert_date($entry->date))return false;
     if($node->field_sugar_time_length['und'][0]['value']        != $entry->time_length)     return false;
     if($node->field_sugar_description['und'][0]['value']        != utf8_encode($entry->description))return false;
     return true;
