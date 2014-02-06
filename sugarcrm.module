@@ -92,7 +92,7 @@ function sugarcrm_cron(){
         foreach ($cases as $case) {
             _sugarcrm_manage_case($case);
         }
-        $timeoffset = 0;
+        
         $time = $client->get_jcrmtime($timeoffset, $max_rows);
         foreach ($time as $t) {
             _sugarcrm_manage_entry($t);
