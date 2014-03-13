@@ -6,6 +6,7 @@ class SugarConnector {
     const TASKS = 'Tasks';
     const JCRMTIME = 'JCRMTime';
     const CASES = 'Cases';
+    const ACCOUNTS = 'Accounts';
     const MAX_ROWS = 300;
 
     private $url = "http://crm.bellcom.dk/soap.php?wsdl";
@@ -129,6 +130,15 @@ class SugarConnector {
         $list = array();
         foreach ($get_entry_list_result['entry_list'] as $entry) {
             $list[] = new SugarCase($entry['name_value_list']);
+        }
+        return $list;
+    }
+
+    public function get_accounts($offset = 0, $rows = self::MAX_ROWS){
+        $get_entry_list_result = $this->get_entry_list(self::ACCOUNTS, $offset, $rows);
+        $list = array();
+        foreach ($get_entry_list_result['entry_list'] as $entry) {
+            $list[] = new SugarAccount($entry['name_value_list']);
         }
         return $list;
     }
