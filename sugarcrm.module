@@ -95,10 +95,22 @@ function sugarcrm_cron() {
       _sugarcrm_manage_case($case);
     }
 
+    if (count($cases) == 0) $caseoffset = 0;
+    else $caseoffset += $max_rows;
+	
+	$cases = null;
+	
+	
     $time = $client->get_jcrmtime($timeoffset, $max_rows);
     foreach ($time as $t) {
       _sugarcrm_manage_entry($t);
     }
+
+	if (count($time) == 0) $timeoffset = 0;
+    else $timeoffset += $max_rows;
+
+	$time = null;
+
     //_sugarcrm_manage_case_field($cases);
 
     $accounts = $client->get_accounts($accountoffset, $max_rows);
@@ -106,15 +118,11 @@ function sugarcrm_cron() {
       _sugarcrm_manage_account($a);
     }
 
-    if (count($cases) == 0) $caseoffset = 0;
-    else $caseoffset += $max_rows;
-
-    if (count($time) == 0) $timeoffset = 0;
-    else $timeoffset += $max_rows;
-
     if (count($accounts) == 0) $accountoffset = 0;
     else $accountoffset += $max_rows;
 
+	$accounts = null;
+	
     variable_set('sugarcrm_offset_jcrmtime', $timeoffset);
     variable_set('sugarcrm_offset_case', $caseoffset);
     variable_set('sugarcrm_offset_account', $accountoffset);
