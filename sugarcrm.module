@@ -153,6 +153,7 @@ function _sugarcrm_manage_case($entry){
             if(_sugarcrm_compare_case_data($node, $entry) == false){
                 $node = _sugarcrm_set_case_fields($node, $entry);
                 node_save($node);
+				$node = null;
             }
         }
     }
@@ -162,7 +163,10 @@ function _sugarcrm_manage_case($entry){
         $node = _sugarcrm_create_case($entry);
         $node = node_submit($node);
         node_save($node);
+		$node = null;
     }
+	$query = null;
+	$result = null;
 
 }
 
@@ -201,6 +205,8 @@ function _sugarcrm_manage_entry($entry){
         _sugarcrm_bind_to_case($node);
         //debug($node->nid);
     }
+	$query = null;
+	$result = null;
 }
 
 /**
@@ -236,7 +242,8 @@ function _sugarcrm_manage_account($account){
     node_save($node);
     _sugarcrm_bind_case_to_account($node);
   }
-
+	$query = null;
+	$result = null;
 }
 
 /**
@@ -260,7 +267,10 @@ function _sugarcrm_bind_case_to_account($node){
     }
     $node->field_sugar_account_cases['und'] = $targets;
     node_save($node);
+	$node = null;
   }
+	$query = null;
+	$result = null;
 }
 
 /**
@@ -279,7 +289,10 @@ function _sugarcrm_bind_to_case($node){
         $param = array_keys($result['node']);
         $node->field_sugar_case['und'][0]['target_id'] = array_shift($param);
         node_save($node);
+		$node = null;
     }
+	$query = null;
+	$result = null;
 }
 
 /**
